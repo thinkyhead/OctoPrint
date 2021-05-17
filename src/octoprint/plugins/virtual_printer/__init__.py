@@ -27,7 +27,7 @@ class VirtualPrinterPlugin(
             "smoothieTemperatureReporting": False,
             "klipperTemperatureReporting": False,
             "reprapfwM114": False,
-            "sdFiles": {"size": True, "longname": False},
+            "sdFiles": {"size": True, "longname": True},
             "throttle": 0.01,
             "sendWait": True,
             "waitInterval": 1.0,
@@ -50,6 +50,7 @@ class VirtualPrinterPlugin(
             "m115ReportCapabilities": True,
             "capabilities": {
                 "AUTOREPORT_TEMP": True,
+                "AUTOREPORT_POS": True,
                 "AUTOREPORT_SD_STATUS": True,
                 "EMERGENCY_PARSER": True,
             },

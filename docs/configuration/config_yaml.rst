@@ -1133,6 +1133,8 @@ Use `Javascript regular expressions <https://developer.mozilla.org/en/docs/Web/J
    terminalFilters:
    - name: Suppress temperature messages
      regex: '(Send: (N\d+\s+)?M105)|(Recv:\s+(ok\s+([PBN]\d+\s+)*)?([BCLPR]|T\d*):-?\d+)'
+   - name: Suppress position messages
+     regex: '(Send: (N\d+\s+)?M114)|(Recv:\s*(ok\s+)?X:([-+]?[0-9.]+)\s+Y:([-+]?[0-9.]+)\s+Z:([-+]?[0-9.]+)\s+E:([-+]?[0-9.]+))'
    - name: Suppress SD status messages
      regex: '(Send: (N\d+\s+)?M27)|(Recv: SD printing byte)|(Recv: Not SD printing)'
    - name: Suppress wait responses

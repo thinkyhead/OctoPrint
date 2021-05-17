@@ -197,6 +197,8 @@ There many configuration options via ``config.yaml`` for the virtual printer tha
        # Capabilities to report if capability report is enabled
        capabilities:
          AUTOREPORT_TEMP: true
+         AUTOREPORT_POS: true
+         AUTOREPORT_SD_STATUS: true
 
        # Simulated ambient temperature in °C
        ambientTemperature: 21.3

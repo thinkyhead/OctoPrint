@@ -167,6 +167,7 @@ class VirtualPrinter:
         self._capabilities = self._settings.get(["capabilities"], merged=True)
 
         self._temperature_reporter = None
+        self._position_reporter = None
         self._sdstatus_reporter = None
 
         self.current_line = 0
@@ -661,7 +662,16 @@ class VirtualPrinter:
                 self._busyInterval = interval
 
     # noinspection PyUnusedLocal
-    def _gcode_M114(self, data: str) -> bool:
+    def _sendWithOkPrefix(self, output):
+        if not self._okBeforeCommandOutput:
+            ok = self._ok()
+            if ok:
+                output = f"{ok} {output}"
+        self._send(output)
+
+    # noinspection PyUnusedLocal
+    def _generatePositionOutput(self):
+        # type: (str) -> bool
         m114FormatString = self._settings.get(["m114FormatString"])
         e = {index: value for index, value in enumerate(self._lastE)}
         e["current"] = self._lastE[self.currentExtruder]
@@ -681,12 +691,11 @@ class VirtualPrinter:
             b=int(self._lastY * 100),
             c=int(self._lastZ * 100),
         )
+        return output
 
-        if not self._okBeforeCommandOutput:
-            ok = self._ok()
-            if ok:
-                output = f"{self._ok()} {output}"
-        self._send(output)
+    # noinspection PyUnusedLocal
+    def _gcode_M114(self, data: str) -> bool:
+        self._sendWithOkPrefix(self._generatePositionOutput())
         return True
 
     # noinspection PyUnusedLocal
@@ -705,6 +714,21 @@ class VirtualPrinter:
                 self._send("echo:%s" % re.search(r"M117\s+(.*)", data).group(1))
             except AttributeError:
                 self._send("echo:")
+
+    def _gcode_M154(self, data: str) -> None:
+        matchS = re.search(r"S([0-9]+)", data)
+        if matchS is not None:
+            interval = int(matchS.group(1))
+            if self._position_reporter is not None:
+                self._position_reporter.cancel()
+
+            if interval > 0:
+                self._position_reporter = RepeatedTimer(
+                    interval, lambda: self._send(self._generatePositionOutput())
+                )
+                self._position_reporter.start()
+            else:
+                self._position_reporter = None
 
     def _gcode_M155(self, data: str) -> None:
         matchS = re.search(r"S([0-9]+)", data)
@@ -1526,14 +1550,7 @@ class VirtualPrinter:
         return output
 
     def _processTemperatureQuery(self):
-        includeOk = not self._okBeforeCommandOutput
-        output = self._generateTemperatureOutput()
-
-        if includeOk:
-            ok = self._ok()
-            if ok:
-                output = f"{ok} {output}"
-        self._send(output)
+        self._sendWithOkPrefix(self._generateTemperatureOutput())
 
     def _parseHotendCommand(
         self, line: str, wait: bool = False, support_r: bool = False

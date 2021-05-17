@@ -179,8 +179,9 @@ devel:
 
     # Capabilities to report if capability report is enabled
     capabilities:
-      AUTOREPORT_TEMP: true
-      AUTOREPORT_POS: true
+      AUTOREPORT_TEMP: false
+      AUTOREPORT_POS: false
+      AUTOREPORT_SD_STATUS: false
 
     # Simulated ambient temperature in °C
     ambientTemperature: 21.3

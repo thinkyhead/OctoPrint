@@ -451,6 +451,7 @@ class MachineCom:
     )
 
     CAPABILITY_AUTOREPORT_TEMP = "AUTOREPORT_TEMP"
+    CAPABILITY_AUTOREPORT_POS = "AUTOREPORT_POS"
     CAPABILITY_AUTOREPORT_SD_STATUS = "AUTOREPORT_SD_STATUS"
     CAPABILITY_BUSY_PROTOCOL = "BUSY_PROTOCOL"
     CAPABILITY_EMERGENCY_PARSER = "EMERGENCY_PARSER"
@@ -2706,6 +2707,11 @@ class MachineCom:
                                     "Firmware states that it supports temperature autoreporting"
                                 )
                                 self._set_autoreport_temperature_interval()
+                            elif capability == self.CAPABILITY_AUTOREPORT_POS and enabled:
+                                self._logger.info(
+                                    "Firmware states that it supports position autoreporting"
+                                )
+                                self._set_autoreport_position_interval()
                             elif (
                                 capability == self.CAPABILITY_AUTOREPORT_SD_STATUS
                                 and enabled
@@ -3429,6 +3435,17 @@ class MachineCom:
         self.sendCommand(
             f"M155 S{interval}",
             tags={"trigger:comm.set_autoreport_temperature_interval"},
+        )
+
+    def _set_autoreport_position_interval(self, interval=None):
+        if interval is None:
+            try:
+                interval = int(self._timeout_intervals.get("positionAutoreport", 2))
+            except Exception:
+                interval = 2
+        self.sendCommand(
+            "M155 S{}".format(interval),
+            tags={"trigger:comm.set_autoreport_position_interval"},
         )
 
     def _set_autoreport_sdstatus_interval(self, interval=None):

@@ -159,6 +159,20 @@ class TestSettings(unittest.TestCase):
         temperature_regex_filter = temperature_regex_filters[0]
         self.assertIn("regex", temperature_regex_filter)
 
+    def test_should_have_suppress_position_regex(self):
+        # we don't want the mocked_config, because we're testing the actual value.
+        # with self.mocked_config():
+
+        filters = octoprint.settings.Settings().get(["terminalFilters"])
+        position_regex_filters = [
+            x for x in filters if x.get("name") == "Suppress position messages"
+        ]
+        self.assertEqual(len(position_regex_filters), 1)
+
+        # we know there's a 'name' by now, so just ensure we have the regex key
+        position_regex_filter = position_regex_filters[0]
+        self.assertIn("regex", position_regex_filter)
+
     def test_temperature_regex_should_not_match(self):
         """random entries that aren't temperature regex entries"""
         # we don't want the mocked_config, because we're testing the actual value.
@@ -208,6 +222,26 @@ class TestSettings(unittest.TestCase):
             self.assertTrue(
                 match_result,
                 f"string did not match and it should have: {terminal_string!r}",
+            )
+
+    def test_position_regex_matches(self):
+        # we don't want the mocked_config, because we're testing the actual value.
+        # with self.mocked_config():
+
+        common_terminal_entries = ["Recv: X:123.45 Y234.56 Z34.567 E456.78"]
+
+        filters = octoprint.settings.Settings().get(["terminalFilters"])
+        position_pattern = [
+            x for x in filters if x.get("name") == "Suppress position messages"
+        ][0]["regex"]
+
+        matcher = re.compile(position_pattern)
+        for terminal_string in common_terminal_entries:
+            match_result = matcher.match(terminal_string)
+            # can switch to assertIsNotNone after 3.x upgrade.
+            self.assertTrue(
+                match_result,
+                "string did not match and it should have: {!r}".format(terminal_string),
             )
 
     ##~~ test getters

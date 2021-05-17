@@ -403,6 +403,8 @@ class TestCommHelpers(unittest.TestCase):
         ("Cap:EEPROM:0", ("EEPROM", False)),
         ("AUTOREPORT_TEMP:1", ("AUTOREPORT_TEMP", True)),
         ("AUTOREPORT_TEMP:0", ("AUTOREPORT_TEMP", False)),
+        ("AUTOREPORT_POS:1", ("AUTOREPORT_POS", True)),
+        ("AUTOREPORT_POS:0", ("AUTOREPORT_POS", False)),
         ("TOO:MANY:FIELDS", None),
         ("Cap:", None),
         ("TOOLITTLEFIELDS", None),
