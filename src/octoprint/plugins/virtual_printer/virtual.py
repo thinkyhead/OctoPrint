@@ -10,6 +10,7 @@ import io
 import json
 import math
 import os
+import random
 import re
 import threading
 import time
@@ -1048,6 +1049,9 @@ class VirtualPrinter(object):
         else:
             for key, value in self._parse_eeprom_params("SZ", data).items():
                 self._virtual_eeprom.eeprom["auto_level"]["params"][key] = float(value)
+        if "V" in data:
+            for line in self._construct_mesh_values(data):
+                self._send(line)
 
     def _gcode_M900(self, data):
         if not self._virtual_eeprom:
@@ -1136,6 +1140,27 @@ class VirtualPrinter(object):
                 lines.append(line)
         return lines
 
+    def _construct_mesh_values(self, data):
+        # Generate a random mesh with w,h dimensions
+        grid = [6, 6]
+        mesh = [
+            [(0.3 * (random.random() - 0.5)) for i in range(grid[0])]
+            for j in range(grid[1])
+        ]
+
+        # Get the mesh format from 'T'
+        mesh_format = 0
+        if "T" in data:
+            for _key, value in self._parse_eeprom_params("T", data).items():
+                mesh_format = max(0, min(2, int(value)))
+
+        lines = []
+        lines.append("Bilinear Leveling Grid (%i):" % mesh_format)
+        for meshline in mesh:
+            line = ", ".join(("%.3f" % f) for f in meshline)
+            lines.append(line)
+        return lines
+
     def _m145_handling(self):
         config = self._virtual_eeprom.eeprom["material"]
         lines = []
@@ -1149,11 +1174,11 @@ class VirtualPrinter(object):
     @staticmethod
     def _parse_eeprom_params(letters, line):
         # letters provided in a string (eg "XYZ") and line (eg. M92 X20 Y20 Z20)
-        # are parsed into a dict
+        # are parsed into a dict. Quoted string parameters also accepted.
         params = list(letters)
         output = {}
         for param in params:
-            match = re.search(param + r"([0-9]+(\.[0-9]{1,2})?)", line)
+            match = re.search(param + r"([0-9]+(\.[0-9]*)?|\\\"[^\"]*\\\")", line)
             if match:
                 output[param] = match.group(1)
         return output
@@ -1432,21 +1457,34 @@ class VirtualPrinter(object):
             self._send(item)
         self._send("End file list")
 
+    def _scanRecursive(self, path, prefix=None, existing=None):
+        if prefix is None:
+            prefix = ""
+        if existing is None:
+            existing = []
+        # print("Enter _scanRecursive with existing=", existing)
+        with scandir(path) as scan:
+            for entry in scan:
+                dosname = get_dos_filename(entry.name, existing).lower()
+                dospath = prefix + dosname
+                if entry.is_file():
+                    existing.append(dosname)
+                    # print("Appended %s so existing=" % dosname, existing)
+                    yield {
+                        "name": entry.name,
+                        "path": entry.path,
+                        "dosname": dospath,
+                        "size": entry.stat().st_size,
+                    }
+                else:
+                    # print("Entering DIR %s. existing=" % dospath, existing)
+                    yield from self._scanRecursive(entry.path, dospath + "/")
+
     def _mappedSdList(self):
-        # type: () -> collections.OrderedDict
+        # print("Starting File Listing")
         result = collections.OrderedDict()
-        for entry in scandir(self._virtualSd):
-            if not entry.is_file():
-                continue
-            dosname = get_dos_filename(
-                entry.name, existing_filenames=list(result.keys())
-            ).lower()
-            result[dosname] = {
-                "name": entry.name,
-                "path": entry.path,
-                "dosname": dosname,
-                "size": entry.stat().st_size,
-            }
+        for f in self._scanRecursive(self._virtualSd):
+            result[f["dosname"]] = f
         return result
 
     def _selectSdFile(self, filename, check_already_open=False):
@@ -2200,7 +2238,7 @@ class VirtualEEPROM:
             },
             "auto_level": {
                 "command": "M420",
-                "description": "Bed Levelling:",
+                "description": "Bed Leveling:",
                 "params": {"S": 0, "Z": 0.0},
             },
             "linear_advance": {

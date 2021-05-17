@@ -549,6 +549,8 @@ def get_dos_filename(
     if whitelisted_extensions is None:
         whitelisted_extensions = []
 
+    # print("In get_dos_filename(%s ...) existing=" % input, existing_filenames)
+
     filename, ext = os.path.splitext(input)
 
     ext = ext.lower()
@@ -638,7 +640,9 @@ def find_collision_free_name(filename, extension, existing_filenames, max_power=
 
     if filename.startswith("/"):
         filename = filename[1:]
-    existing_filenames = [
+
+    # Unicode filenames stripping leading slash
+    unicode_filenames = [
         to_unicode(x[1:] if x.startswith("/") else x) for x in existing_filenames
     ]
 
@@ -654,7 +658,7 @@ def find_collision_free_name(filename, extension, existing_filenames, max_power=
     full_name_format = "{filename}.{extension}" if extension else "{filename}"
 
     result = full_name_format.format(filename=filename, extension=extension)
-    if len(filename) <= 8 and result not in existing_filenames:
+    if len(filename) <= 8 and result not in unicode_filenames:
         # early exit
         return result
 
@@ -666,7 +670,7 @@ def find_collision_free_name(filename, extension, existing_filenames, max_power=
             segment=filename[: (6 - power + 1)], counter=str(counter)
         )
         result = full_name_format.format(filename=prefix, extension=extension)
-        if result not in existing_filenames:
+        if result not in unicode_filenames:
             return result
         counter += 1
         if counter >= 10 ** power:
