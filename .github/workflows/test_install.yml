@@ -11,6 +11,7 @@ on:
 jobs:
   install-branch:
     name: Install branch
+    if: github.repository == 'OctoPrint/OctoPrint'
     strategy:
       matrix:
         os: ["ubuntu-latest"]
@@ -46,6 +47,7 @@ jobs:
 
   install-latest:
     name: Install latest release
+    if: github.repository == 'OctoPrint/OctoPrint'
     strategy:
       matrix:
         os: ["ubuntu-latest"]
